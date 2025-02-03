@@ -4,158 +4,213 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatbot</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            background-color: #121212;
+            color: #fff;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
         }
-        .chat-container {
+        .app-container {
             width: 90%;
-            max-width: 400px;
-            background: white;
+            max-width: 1200px;
+            height: 80vh;
+            background: #1e1e1e;
             border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
         }
         .chat-header {
             background: #007bff;
             color: white;
             text-align: center;
             padding: 15px;
-            font-size: 1.2em;
+            font-size: 1.5em;
+            font-weight: bold;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
         }
         #chatbox {
-            height: 300px;
+            flex-grow: 1;
             overflow-y: auto;
             padding: 15px;
-            background: #fff;
+            background: #252525;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
         .chat-input-container {
             display: flex;
             padding: 10px;
-            border-top: 1px solid #ddd;
-            background: #fff;
+            border-top: 1px solid #333;
+            background: #1e1e1e;
         }
-        #chatInput {
-            flex: 1;
+        .message {
             padding: 10px;
-            border: 1px solid #ccc;
             border-radius: 5px;
-            outline: none;
+            max-width: 80%;
         }
-        #sendBtn {
+        .message.user {
             background: #007bff;
             color: white;
-            border: none;
-            padding: 10px 15px;
-            margin-left: 5px;
+            align-self: flex-end;
+        }
+        .message.bot {
+            background: #444;
+            color: white;
+            align-self: flex-start;
+        }
+        pre {
+            background: #2d2d2d;
+            padding: 10px;
             border-radius: 5px;
-            cursor: pointer;
+            color: #f8f9fa;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
         }
-        #sendBtn:hover {
-            background: #0056b3;
-        }
-        .form-popup {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            width: 90%;
-            max-width: 350px;
-            text-align: center;
-        }
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-            display: none;
-        }
-        input, button {
-            font-size: 1em;
+        code {
+            color: #f8f9fa;
+            font-family: 'Courier New', Courier, monospace;
         }
     </style>
 </head>
 <body>
     <div class="overlay" id="overlay"></div>
 
-    <div class="form-popup" id="userForm">
-        <h3>Enter Your Details</h3>
-        <form id="userDetailsForm">
-            <label for="name">Name:</label><br>
-            <input type="text" id="name" name="name" required><br><br>
-            <label for="email">Email:</label><br>
-            <input type="email" id="email" name="email" required><br><br>
-            <button type="submit">Submit</button>
-        </form>
+    <div class="modal" id="userForm" tabindex="-1" style="display: block;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header">
+                    <h5 class="modal-title">Enter Your Details</h5>
+                </div>
+                <div class="modal-body">
+                    <form id="userDetailsForm">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Name:</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email:</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="chat-container">
+    <div class="app-container">
         <div class="chat-header">Chatbot</div>
         <div id="chatbox"></div>
         <div class="chat-input-container">
-            <input type="text" id="chatInput" placeholder="Ask a question..." disabled />
-            <button id="sendBtn" disabled>Send</button>
+            <input type="text" id="chatInput" class="form-control bg-dark text-white" placeholder="Ask a question..." disabled />
+            <button id="sendBtn" class="btn btn-primary ms-2" disabled>Send</button>
         </div>
     </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
 
     <script>
         let userDetails = {};
         let isBotResponding = false;
-
+    
         window.onload = function() {
-            document.getElementById("userForm").style.display = "block";
-            document.getElementById("overlay").style.display = "block";
-        }
-
+            let userFormModal = new bootstrap.Modal(document.getElementById("userForm"));
+            userFormModal.show();
+        };
+    
         document.getElementById("userDetailsForm").addEventListener("submit", function(e) {
             e.preventDefault();
             userDetails.name = document.getElementById("name").value;
             userDetails.email = document.getElementById("email").value;
-            document.getElementById("userForm").style.display = "none";
-            document.getElementById("overlay").style.display = "none";
+    
+            let userFormModal = bootstrap.Modal.getInstance(document.getElementById("userForm"));
+            userFormModal.hide();
+    
             document.getElementById("chatInput").disabled = false;
             document.getElementById("sendBtn").disabled = false;
+    
+            const welcomeMessage = `Hello ${userDetails.name}! 👋 How can I assist you today?`;
+            addMessage("bot", welcomeMessage);
         });
-
-        document.getElementById("sendBtn").addEventListener("click", async function() {
+    
+        function addMessage(sender, message, isCode = false) {
+            let chatbox = document.getElementById("chatbox");
+            let messageHTML = `<div class="message ${sender}"><b>${sender === "bot" ? "Bot" : "You"}:</b> ${isCode ? `<pre><code>${message}</code></pre>` : message}</div>`;
+            chatbox.innerHTML += messageHTML;
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+    
+        async function sendMessage() {
             if (isBotResponding) return;
             isBotResponding = true;
             document.getElementById("chatInput").disabled = true;
             document.getElementById("sendBtn").disabled = true;
-            
-            const userMessage = document.getElementById("chatInput").value;
+    
+            let userMessage = document.getElementById("chatInput").value.trim();
             if (!userMessage) return;
-            document.getElementById("chatbox").innerHTML += `<p><b>You:</b> ${userMessage}</p>`;
-            
-            const response = await fetch("http://127.0.0.1:5000/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: userMessage, userDetails: userDetails })
-            });
-            
-            const data = await response.json();
-            document.getElementById("chatbox").innerHTML += `<p><b>Bot:</b> ${data.response}</p>`;
-            
+    
+            addMessage("user", userMessage);
             document.getElementById("chatInput").value = "";
+    
+            // Show typing indicator
+            let typingIndicator = document.createElement("div");
+            typingIndicator.id = "typingIndicator";
+            typingIndicator.className = "message bot";
+            typingIndicator.innerHTML = "<b>Bot:</b> <em>Bot is typing...</em>";
+            document.getElementById("chatbox").appendChild(typingIndicator);
+            document.getElementById("chatbox").scrollTop = document.getElementById("chatbox").scrollHeight;
+    
+            // Fetch response
+            try {
+                let response = await fetch("http://127.0.0.1:5000/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: userMessage, userDetails: userDetails })
+                });
+    
+                let data = await response.json();
+                let botResponse = data.response;
+    
+                document.getElementById("typingIndicator").remove(); // Remove typing indicator
+    
+                if (botResponse.includes("```")) {
+                    let codeSnippet = botResponse.split("```")[1];
+                    addMessage("bot", codeSnippet, true);
+                } else {
+                    addMessage("bot", botResponse);
+                }
+            } catch (error) {
+                console.error("Error fetching bot response:", error);
+                addMessage("bot", "Oops! Something went wrong. Please try again.");
+            }
+    
             isBotResponding = false;
             document.getElementById("chatInput").disabled = false;
             document.getElementById("sendBtn").disabled = false;
+        }
+    
+        document.getElementById("sendBtn").addEventListener("click", sendMessage);
+    
+        document.getElementById("chatInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
         });
     </script>
+    
 </body>
 </html>
